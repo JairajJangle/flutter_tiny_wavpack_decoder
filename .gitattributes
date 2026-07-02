@@ -1,0 +1,7 @@
+# The vendored WavPack sources must stay byte-identical to upstream
+# (some files use CRLF line endings) — never normalize them.
+src/tiny-wavpack/** -text
+
+# Binary audio fixtures.
+*.wv binary
+*.wav binary
