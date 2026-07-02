@@ -1,7 +1,7 @@
 # Publishes to pub.dev when a version tag (v1.2.3) is pushed.
 #
 # INERT until you enable automated publishing for this package on pub.dev:
-#   pub.dev → package → Admin → Automated publishing → GitHub Actions,
+#   pub.dev > package > Admin > Automated publishing > GitHub Actions,
 #   repository JairajJangle/flutter_tiny_wavpack_decoder, tag pattern v{{version}}.
 # The first release must be published manually (`dart pub publish`).
 name: Publish to pub.dev

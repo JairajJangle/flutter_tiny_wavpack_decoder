@@ -95,7 +95,7 @@ class _DecoderPageState extends State<DecoderPage> {
             FilledButton.icon(
               onPressed: _decoding ? null : _decode,
               icon: const Icon(Icons.music_note),
-              label: Text(_decoding ? 'Decoding…' : 'Decode sample'),
+              label: Text(_decoding ? 'Decoding...' : 'Decode sample'),
             ),
             const SizedBox(height: 24),
             LinearProgressIndicator(value: _progress),

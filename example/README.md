@@ -1,16 +1,16 @@
-# flutter_tiny_wavpack_decoder_example
+# flutter_tiny_wavpack_decoder example
 
-Demonstrates how to use the flutter_tiny_wavpack_decoder plugin.
+A minimal Flutter app that decodes a bundled WavPack sample
+(`assets/sine_stereo_16bit_44100.wv`) to a PCM `.wav` file and shows live
+decode progress, the elapsed time, and the resulting file size.
 
-## Getting Started
+## Run
 
-This project is a starting point for a Flutter application.
+```sh
+flutter run            # on a connected device or emulator
+flutter run -d macos   # or -d linux / -d windows for desktop
+```
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Press "Decode sample" to run the decode. The bundled asset is copied to a
+temporary directory, decoded through the plugin, and the output path and size
+are displayed on success.

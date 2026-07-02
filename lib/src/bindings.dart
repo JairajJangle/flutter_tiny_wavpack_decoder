@@ -1,5 +1,5 @@
 // Hand-written FFI bindings for src/ftwd_shim.h.
-// KEEP IN LOCKSTEP with that header — it is the single native entry point.
+// KEEP IN LOCKSTEP with that header; it is the single native entry point.
 import 'dart:ffi';
 
 /// Size of the caller-allocated error buffer, including the trailing NUL.

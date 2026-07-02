@@ -37,7 +37,7 @@ class TinyWavpackDecoder {
   /// Tail of the process-wide decode queue.
   ///
   /// The native decoder keeps static state (a static `WavpackContext` and a
-  /// static `FILE*`), so decodes must never overlap anywhere in the process —
+  /// static `FILE*`), so decodes must never overlap anywhere in the process;
   /// this is deliberately static, not per instance.
   static Future<void> _queueTail = Future<void>.value();
 
@@ -61,7 +61,7 @@ class TinyWavpackDecoder {
   /// Throws an [ArgumentError] for invalid [bitsPerSample] or [maxSamples],
   /// and a [WavpackDecodeException] when decoding fails (missing input file,
   /// invalid or corrupt WavPack data, CRC errors, unwritable output, or an
-  /// unsupported stream version — the decoder handles WavPack 4.2–4.10).
+  /// unsupported stream version; the decoder handles WavPack 4.2-4.10).
   Future<void> decode({
     required String inputPath,
     required String outputPath,

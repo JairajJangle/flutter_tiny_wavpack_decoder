@@ -1,6 +1,6 @@
 // Produces the corrupt-CRC fixture: copies a .wv file and XORs 16 bytes
-// with 0xFF starting at 60% of the file length — deep inside the sample
-// data, past all headers — so the decoder hits CRC errors mid-stream.
+// with 0xFF starting at 60% of the file length (deep inside the sample
+// data, past all headers) so the decoder hits CRC errors mid-stream.
 //
 // Usage: dart run tool/corrupt_fixture.dart <input.wv> <output.wv>
 import 'dart:io';

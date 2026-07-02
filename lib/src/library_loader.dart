@@ -8,7 +8,7 @@ const String _libName = 'flutter_tiny_wavpack_decoder';
 /// When set, [openFtwdLibrary] opens it instead of the platform-bundled
 /// library. Only tests should assign this (the package's own FFI runner
 /// reads it to propagate the override into worker isolates, since globals
-/// are per-isolate). Not part of the public API — this library is not
+/// are per-isolate). Not part of the public API; this library is not
 /// exported.
 String? ftwdLibraryOverridePath;
 

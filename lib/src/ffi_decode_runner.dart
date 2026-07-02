@@ -13,7 +13,7 @@ import 'native_decode_runner.dart';
 /// the calling isolate stays responsive. Progress flows through a
 /// [NativeCallable.listener] created on the calling isolate: its native
 /// function pointer is safe to invoke from the worker's thread, and each
-/// invocation is posted to the calling isolate's event loop — which keeps
+/// invocation is posted to the calling isolate's event loop, which keeps
 /// pumping while the worker is blocked inside the C call.
 final class FfiDecodeRunner implements NativeDecodeRunner {
   /// Creates the FFI-backed runner.
@@ -31,7 +31,7 @@ final class FfiDecodeRunner implements NativeDecodeRunner {
       // The worker closure MUST be constructed in _workerBody, never inline
       // here: closures created in this scope share one capture context with
       // the listener lambda above, which references the caller's onProgress
-      // (typically unsendable widget state) — inlining the closure makes
+      // (typically unsendable widget state); inlining the closure makes
       // Isolate.run's spawn message unsendable and throws at runtime.
       return await Isolate.run(
         _workerBody(

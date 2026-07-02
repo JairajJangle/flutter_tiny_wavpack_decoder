@@ -2,33 +2,40 @@
 
 [![pub package](https://img.shields.io/pub/v/flutter_tiny_wavpack_decoder.svg)](https://pub.dev/packages/flutter_tiny_wavpack_decoder)
 [![CI](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/actions/workflows/ci.yml/badge.svg)](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/blob/main/LICENSE)
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/JairajJangle)
 
-Decode WavPack (`.wv`) audio files to PCM `.wav` files on-device, powered by
-the tiny, dependency-free [WavPack](https://www.wavpack.com) 4.40
-"tiny decoder" C library over `dart:ffi`.
+A Flutter plugin that decodes WavPack (`.wv`) audio files to PCM `.wav` files
+on-device, powered by the tiny, dependency-free
+[WavPack](https://www.wavpack.com) 4.40 "tiny decoder" C library called
+directly through `dart:ffi`.
 
-This is the Flutter counterpart of
-[react-native-tiny-wavpack-decoder](https://github.com/JairajJangle/react-native-tiny-wavpack-decoder),
-sharing the exact same (unmodified) C decoder.
+It is the Flutter counterpart of
+[react-native-tiny-wavpack-decoder](https://github.com/JairajJangle/react-native-tiny-wavpack-decoder)
+and shares the exact same, unmodified C decoder.
 
 ## Features
 
-- 🎵 `.wv` → `.wav` (PCM, canonical 44-byte header) fully on-device
-- 📊 Live decode progress callback (`0.0 → 1.0`)
-- 🎚 Output bit depth selection: 8, 16, 24, or 32 bits per sample
-- ✂️ Optional `maxSamples` cap for partial decodes
-- 🧵 Decodes in a worker isolate — the UI never blocks
-- 🪶 Pure `dart:ffi` — no method channels, no platform bridge code
-- 🔒 Concurrent calls are safe: decodes are automatically serialized
+- Decode `.wv` to `.wav` (PCM, canonical 44-byte header) fully on-device.
+- Live decode progress callback reporting values from 0.0 to 1.0.
+- Output bit depth selection: 8, 16, 24, or 32 bits per sample.
+- Optional `maxSamples` cap for partial decodes.
+- Decoding runs in a worker isolate, so the UI thread never blocks.
+- Pure `dart:ffi`: no method channels and no platform bridge code.
+- Concurrent calls are safe; decodes are automatically serialized.
 
 ## Platform support
 
 | Android | iOS | macOS | Linux | Windows |
 |:-------:|:---:|:-----:|:-----:|:-------:|
-|    ✅    |  ✅  |   ✅   |   ✅   |    ✅    |
+|   Yes   | Yes |  Yes  |  Yes  |   Yes   |
 
-## Install
+## Requirements
+
+- Flutter 3.27.0 or newer.
+- Dart SDK 3.9.0 or newer.
+
+## Installation
 
 ```sh
 flutter pub add flutter_tiny_wavpack_decoder
@@ -52,13 +59,34 @@ try {
       print('Decoding: ${(progress * 100).toStringAsFixed(0)}%');
     },
   );
-  print('Done!');
+  print('Done');
 } on WavpackDecodeException catch (e) {
   print('Decode failed: ${e.message}');
 }
 ```
 
-See [`example/`](example/) for a complete app with a progress bar.
+See the [`example/`](example/) app for a complete UI with a progress bar.
+
+### Testing your own code
+
+The `TinyWavpackDecoder` constructor accepts a custom `NativeDecodeRunner`, so
+you can fake the native layer in widget and unit tests without loading any
+native library:
+
+```dart
+class FakeRunner implements NativeDecodeRunner {
+  @override
+  Future<NativeDecodeResult> run(
+    NativeDecodeRequest request,
+    void Function(double) onProgress,
+  ) async {
+    onProgress(1.0);
+    return const NativeDecodeResult(success: true, error: '');
+  }
+}
+
+final decoder = TinyWavpackDecoder(runner: FakeRunner());
+```
 
 ## API
 
@@ -68,55 +96,35 @@ See [`example/`](example/) for a complete app with a progress bar.
 |---|---|---|---|
 | `inputPath` | `String` | required | Path of the `.wv` file to decode. |
 | `outputPath` | `String` | required | Path of the `.wav` file to write (overwritten if present). |
-| `maxSamples` | `int` | `-1` | Max samples per channel to decode; `-1` = entire file. |
+| `maxSamples` | `int` | `-1` | Max samples per channel to decode; `-1` decodes the entire file. |
 | `bitsPerSample` | `int` | `16` | Output bit depth: 8, 16, 24, or 32. |
 | `onProgress` | `void Function(double)?` | `null` | Progress callback on the caller's isolate. |
 
-Returns `Future<void>` that completes when the WAV file is fully written.
+Returns a `Future<void>` that completes once the WAV file is fully written.
 
-**Errors:** invalid `bitsPerSample`/`maxSamples` throw `ArgumentError`
-immediately; runtime failures (missing input, invalid/corrupt WavPack data,
-CRC errors, unwritable output) throw `WavpackDecodeException` with the native
-decoder's message.
+Invalid `bitsPerSample` or `maxSamples` throw `ArgumentError` immediately.
+Runtime failures (missing input, invalid or corrupt WavPack data, CRC errors,
+unwritable output) throw `WavpackDecodeException` carrying the native decoder's
+message.
 
-**Progress guarantees:** values are strictly increasing within `(0.0, 1.0]`,
-a terminal `1.0` is always delivered on success, and no callback fires after
-the returned future completes. Granularity is one callback per 4096 decoded
-frames.
+Progress values are strictly increasing within the range 0.0 to 1.0, a final
+1.0 is always delivered on success, and no callback fires after the returned
+future completes. Granularity is one callback per 4096 decoded frames.
 
-**Concurrency:** the bundled C decoder keeps static state and is not
-reentrant, so all decodes in the process run through one queue — concurrent
-`decode()` calls are safe but execute one at a time.
-
-### Testing your own code
-
-`TinyWavpackDecoder`'s constructor accepts a custom `NativeDecodeRunner`, so
-you can fake the native layer in widget/unit tests without any native
-library:
-
-```dart
-class FakeRunner implements NativeDecodeRunner {
-  @override
-  Future<NativeDecodeResult> run(NativeDecodeRequest request,
-      void Function(double) onProgress) async {
-    onProgress(1.0);
-    return const NativeDecodeResult(success: true, error: '');
-  }
-}
-
-final decoder = TinyWavpackDecoder(runner: FakeRunner());
-```
+Because the bundled C decoder keeps static state and is not reentrant, all
+decodes in the process run through one queue. Concurrent `decode()` calls are
+safe but execute one at a time.
 
 ## Limitations
 
 Inherited from the WavPack 4.40 tiny decoder (see
 `src/tiny-wavpack/lib/readme.txt`):
 
-- Only the **first two channels** of multichannel files are decoded.
-- **No correction (`.wvc`) file support** — pure lossy/lossless `.wv` only.
-- WavPack stream versions **4.2 – 4.10** only (no pre-4.0 files).
-- Floating-point audio is returned **clipped to 24-bit** integer data.
-- Output WAV is limited to < 4 GiB (32-bit RIFF sizes).
+- Only the first two channels of multichannel files are decoded.
+- No correction (`.wvc`) file support; plain lossy or lossless `.wv` only.
+- WavPack stream versions 4.2 to 4.10 only (no pre-4.0 files).
+- Floating-point audio is returned clipped to 24-bit integer data.
+- Output WAV is limited to less than 4 GiB (32-bit RIFF sizes).
 
 ## Development
 
@@ -133,26 +141,34 @@ flutter test
 cd example && flutter run -d macos   # or -d linux / -d windows
 ```
 
-The C sources under `src/tiny-wavpack/` are vendored **byte-identical** from
-the original project and are never modified; see
-`src/tiny-wavpack/UPSTREAM.md`.
+The C sources under `src/tiny-wavpack/` are vendored byte-identical from the
+original project and are never modified; see `src/tiny-wavpack/UPSTREAM.md`.
 
 ## Credits
 
-- [WavPack](https://www.wavpack.com) and its tiny decoder are by David
-  Bryant (Copyright © 1998–2006 Conifer Software, BSD license — see
+- [WavPack](https://www.wavpack.com) and its tiny decoder are by David Bryant
+  (Copyright (c) 1998-2006 Conifer Software, BSD license; see
   [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)).
 - Original React Native plugin:
   [react-native-tiny-wavpack-decoder](https://github.com/JairajJangle/react-native-tiny-wavpack-decoder).
 
 ## License
 
-[MIT](LICENSE) © Jairaj Jangle. Bundled WavPack tiny decoder is BSD-licensed
-(see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)).
+[MIT](LICENSE) (c) Jairaj Jangle. The bundled WavPack tiny decoder is
+BSD-licensed (see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)).
 
-## 🙏 Support the project
+## Support the project
 
-[![LiberaPay](https://img.shields.io/badge/LiberaPay-FutureJJ-yellow?logo=liberapay)](https://liberapay.com/FutureJJ/donate)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-futurejj-ff5f5f?logo=ko-fi)](https://ko-fi.com/futurejj)
-[![PayPal](https://img.shields.io/badge/PayPal-jairajjangle001-00457C?logo=paypal)](https://www.paypal.com/paypalme/jairajjangle001/usd)
-[![UPI](https://img.shields.io/badge/UPI-QR%20code-orange)](https://github.com/JairajJangle/OpenCV-Catalogue/blob/master/.github/Jairaj_Jangle_Google_Pay_UPI_QR_Code.jpg)
+<p align="center" valign="center">
+  <a href="https://www.paypal.com/paypalme/jairajjangle001/usd">
+    <img src=".github/assets/paypal_donate.png" alt="Paypal_Donation_Button" height="50" >
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/sponsors/JairajJangle">
+    <img src=".github/assets/github_sponsor.svg" alt="GitHub_Sponsor_Button" height="50" >
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://liberapay.com/FutureJJ/donate">
+    <img src=".github/assets/liberapay_donate.svg" alt="Liberapay_Donation_Button" height="50" >
+  </a>
+</p>

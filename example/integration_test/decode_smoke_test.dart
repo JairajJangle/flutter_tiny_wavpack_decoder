@@ -29,7 +29,7 @@ void main() {
       outputPath: outputPath,
       onProgress: (p) {
         // Deliberately capture unsendable state (the tester/binding), like a
-        // real app's setState closure does — regression guard for the worker
+        // real app's setState closure does; regression guard for the worker
         // isolate "object is unsendable" spawn failure.
         tester.binding;
         progress.add(p);

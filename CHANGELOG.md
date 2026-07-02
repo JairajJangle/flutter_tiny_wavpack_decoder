@@ -2,12 +2,12 @@
 
 ## 1.0.0
 
-Initial release — Flutter port of
+Initial release. Flutter port of
 [react-native-tiny-wavpack-decoder](https://github.com/JairajJangle/react-native-tiny-wavpack-decoder).
 
 - Decode WavPack (`.wv`) files to PCM `.wav` files on-device using the
   bundled, BSD-licensed WavPack 4.40 "tiny decoder" C library over
-  `dart:ffi` — no method channels, no platform-specific bridge code.
+  `dart:ffi`, with no method channels and no platform-specific bridge code.
 - Supported platforms: Android, iOS, macOS, Linux, Windows.
 - `TinyWavpackDecoder.decode()` with `maxSamples`, `bitsPerSample`
   (8/16/24/32) and an `onProgress` callback delivering monotonically
