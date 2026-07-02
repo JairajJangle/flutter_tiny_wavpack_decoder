@@ -27,7 +27,13 @@ void main() {
     await TinyWavpackDecoder().decode(
       inputPath: inputPath,
       outputPath: outputPath,
-      onProgress: progress.add,
+      onProgress: (p) {
+        // Deliberately capture unsendable state (the tester/binding), like a
+        // real app's setState closure does — regression guard for the worker
+        // isolate "object is unsendable" spawn failure.
+        tester.binding;
+        progress.add(p);
+      },
     );
 
     final output = File(outputPath);

@@ -2,6 +2,7 @@
 library;
 
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -252,6 +253,32 @@ void main() {
   });
 
   group('progress', () {
+    test('onProgress capturing unsendable state must not leak into the worker '
+        'isolate spawn message', () async {
+      // Regression: closures created in the same scope as the Isolate.run
+      // worker closure share a capture context, so onProgress (which in a
+      // real app references widget State / WidgetsFlutterBinding) became
+      // transitively reachable from the spawn message and Isolate.run threw
+      // "object is unsendable". A ReceivePort reproduces the unsendable
+      // capture deterministically.
+      final unsendable = ReceivePort();
+      addTearDown(unsendable.close);
+      final seen = <double>[];
+
+      await decoder.decode(
+        inputPath: _fixture,
+        outputPath: '${tempDir.path}/out.wav',
+        onProgress: (progress) {
+          // Reference the ReceivePort so the callback's context holds it.
+          unsendable.hashCode;
+          seen.add(progress);
+        },
+      );
+
+      expect(seen, isNotEmpty);
+      expect(seen.last, 1.0);
+    });
+
     test(
       'reports granular, strictly increasing values ending at 1.0',
       () async {

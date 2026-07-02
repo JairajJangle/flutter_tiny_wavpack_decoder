@@ -28,48 +28,60 @@ final class FfiDecodeRunner implements NativeDecodeRunner {
       (double progress, Pointer<Void> context) => onProgress(progress),
     );
     try {
-      // The worker closure may only capture sendable values: strings, ints,
-      // and the callback's raw address.
-      final callbackAddress = callable.nativeFunction.address;
-      final overridePath = ftwdLibraryOverridePath;
-      final inputPath = request.inputPath;
-      final outputPath = request.outputPath;
-      final maxSamples = request.maxSamples;
-      final bitsPerSample = request.bitsPerSample;
-
-      return await Isolate.run(() {
-        // Globals are per-isolate; propagate the test override.
-        ftwdLibraryOverridePath = overridePath;
-        final bindings = FtwdBindings(openFtwdLibrary());
-
-        final nativeInput = inputPath.toNativeUtf8();
-        final nativeOutput = outputPath.toNativeUtf8();
-        final errorBuffer = calloc<Char>(ftwdErrorBufferSize);
-        try {
-          final status = bindings.decode(
-            nativeInput.cast(),
-            nativeOutput.cast(),
-            maxSamples,
-            bitsPerSample,
-            Pointer.fromAddress(callbackAddress),
-            nullptr,
-            errorBuffer,
-          );
-          return NativeDecodeResult(
-            success: status == 1,
-            error: status == 1 ? '' : errorBuffer.cast<Utf8>().toDartString(),
-          );
-        } finally {
-          calloc.free(nativeInput);
-          calloc.free(nativeOutput);
-          calloc.free(errorBuffer);
-        }
-      });
+      // The worker closure MUST be constructed in _workerBody, never inline
+      // here: closures created in this scope share one capture context with
+      // the listener lambda above, which references the caller's onProgress
+      // (typically unsendable widget state) — inlining the closure makes
+      // Isolate.run's spawn message unsendable and throws at runtime.
+      return await Isolate.run(
+        _workerBody(
+          callbackAddress: callable.nativeFunction.address,
+          overridePath: ftwdLibraryOverridePath,
+          request: request,
+        ),
+      );
     } finally {
       // Safe even with progress messages still in flight: already-posted
       // messages are dropped or delivered before close takes effect, and the
       // decoder layer suppresses anything arriving after completion.
       callable.close();
     }
+  }
+
+  /// Builds the worker-isolate entry closure in a scope whose captured
+  /// context contains only sendable values (ints, strings, [request]).
+  static NativeDecodeResult Function() _workerBody({
+    required int callbackAddress,
+    required String? overridePath,
+    required NativeDecodeRequest request,
+  }) {
+    return () {
+      // Globals are per-isolate; propagate the test override.
+      ftwdLibraryOverridePath = overridePath;
+      final bindings = FtwdBindings(openFtwdLibrary());
+
+      final nativeInput = request.inputPath.toNativeUtf8();
+      final nativeOutput = request.outputPath.toNativeUtf8();
+      final errorBuffer = calloc<Char>(ftwdErrorBufferSize);
+      try {
+        final status = bindings.decode(
+          nativeInput.cast(),
+          nativeOutput.cast(),
+          request.maxSamples,
+          request.bitsPerSample,
+          Pointer.fromAddress(callbackAddress),
+          nullptr,
+          errorBuffer,
+        );
+        return NativeDecodeResult(
+          success: status == 1,
+          error: status == 1 ? '' : errorBuffer.cast<Utf8>().toDartString(),
+        );
+      } finally {
+        calloc.free(nativeInput);
+        calloc.free(nativeOutput);
+        calloc.free(errorBuffer);
+      }
+    };
   }
 }
