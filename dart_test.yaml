@@ -1,0 +1,4 @@
+tags:
+  # Tests exercising the real C decoder through a host-built shared library.
+  # Build it first with tool/build_host_lib.sh; without it these self-skip.
+  ffi:
