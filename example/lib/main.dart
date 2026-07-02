@@ -108,8 +108,10 @@ class _DecoderPageState extends State<DecoderPage> {
                 style: TextStyle(color: theme.colorScheme.error),
               ),
             if (_outputSummary != null) ...[
-              Text('Decoded in ${_elapsed?.inMilliseconds} ms',
-                  style: theme.textTheme.titleSmall),
+              Text(
+                'Decoded in ${_elapsed?.inMilliseconds} ms',
+                style: theme.textTheme.titleSmall,
+              ),
               const SizedBox(height: 8),
               Text(_outputSummary!, style: theme.textTheme.bodySmall),
             ],

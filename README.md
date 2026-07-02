@@ -1,92 +1,158 @@
 # flutter_tiny_wavpack_decoder
 
-A new Flutter FFI plugin project.
+[![pub package](https://img.shields.io/pub/v/flutter_tiny_wavpack_decoder.svg)](https://pub.dev/packages/flutter_tiny_wavpack_decoder)
+[![CI](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/actions/workflows/ci.yml/badge.svg)](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Getting Started
+Decode WavPack (`.wv`) audio files to PCM `.wav` files on-device, powered by
+the tiny, dependency-free [WavPack](https://www.wavpack.com) 4.40
+"tiny decoder" C library over `dart:ffi`.
 
-This project is a starting point for a Flutter
-[FFI plugin](https://flutter.dev/to/ffi-package),
-a specialized package that includes native code directly invoked with Dart FFI.
+This is the Flutter counterpart of
+[react-native-tiny-wavpack-decoder](https://github.com/JairajJangle/react-native-tiny-wavpack-decoder),
+sharing the exact same (unmodified) C decoder.
 
-## Project structure
+## Features
 
-This template uses the following structure:
+- 🎵 `.wv` → `.wav` (PCM, canonical 44-byte header) fully on-device
+- 📊 Live decode progress callback (`0.0 → 1.0`)
+- 🎚 Output bit depth selection: 8, 16, 24, or 32 bits per sample
+- ✂️ Optional `maxSamples` cap for partial decodes
+- 🧵 Decodes in a worker isolate — the UI never blocks
+- 🪶 Pure `dart:ffi` — no method channels, no platform bridge code
+- 🔒 Concurrent calls are safe: decodes are automatically serialized
 
-* `src`: Contains the native source code, and a CmakeFile.txt file for building
-  that source code into a dynamic library.
+## Platform support
 
-* `lib`: Contains the Dart code that defines the API of the plugin, and which
-  calls into the native code using `dart:ffi`.
+| Android | iOS | macOS | Linux | Windows |
+|:-------:|:---:|:-----:|:-----:|:-------:|
+|    ✅    |  ✅  |   ✅   |   ✅   |    ✅    |
 
-* platform folders (`android`, `ios`, `windows`, etc.): Contains the build files
-  for building and bundling the native code library with the platform application.
+## Install
 
-## Building and bundling native code
-
-The `pubspec.yaml` specifies FFI plugins as follows:
-
-```yaml
-  plugin:
-    platforms:
-      some_platform:
-        ffiPlugin: true
+```sh
+flutter pub add flutter_tiny_wavpack_decoder
 ```
 
-This configuration invokes the native build for the various target platforms
-and bundles the binaries in Flutter applications using these FFI plugins.
+## Usage
 
-This can be combined with dartPluginClass, such as when FFI is used for the
-implementation of one platform in a federated plugin:
+```dart
+import 'package:flutter_tiny_wavpack_decoder/flutter_tiny_wavpack_decoder.dart';
 
-```yaml
-  plugin:
-    implements: some_other_plugin
-    platforms:
-      some_platform:
-        dartPluginClass: SomeClass
-        ffiPlugin: true
+final decoder = TinyWavpackDecoder();
+
+try {
+  await decoder.decode(
+    inputPath: '/path/to/audio.wv',
+    outputPath: '/path/to/audio.wav',
+    // Optional:
+    bitsPerSample: 16, // 8, 16 (default), 24, or 32
+    maxSamples: -1,    // -1 (default) decodes the whole file
+    onProgress: (progress) {
+      print('Decoding: ${(progress * 100).toStringAsFixed(0)}%');
+    },
+  );
+  print('Done!');
+} on WavpackDecodeException catch (e) {
+  print('Decode failed: ${e.message}');
+}
 ```
 
-A plugin can have both FFI and method channels:
+See [`example/`](example/) for a complete app with a progress bar.
 
-```yaml
-  plugin:
-    platforms:
-      some_platform:
-        pluginClass: SomeName
-        ffiPlugin: true
+## API
+
+### `TinyWavpackDecoder.decode(...)`
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `inputPath` | `String` | required | Path of the `.wv` file to decode. |
+| `outputPath` | `String` | required | Path of the `.wav` file to write (overwritten if present). |
+| `maxSamples` | `int` | `-1` | Max samples per channel to decode; `-1` = entire file. |
+| `bitsPerSample` | `int` | `16` | Output bit depth: 8, 16, 24, or 32. |
+| `onProgress` | `void Function(double)?` | `null` | Progress callback on the caller's isolate. |
+
+Returns `Future<void>` that completes when the WAV file is fully written.
+
+**Errors:** invalid `bitsPerSample`/`maxSamples` throw `ArgumentError`
+immediately; runtime failures (missing input, invalid/corrupt WavPack data,
+CRC errors, unwritable output) throw `WavpackDecodeException` with the native
+decoder's message.
+
+**Progress guarantees:** values are strictly increasing within `(0.0, 1.0]`,
+a terminal `1.0` is always delivered on success, and no callback fires after
+the returned future completes. Granularity is one callback per 4096 decoded
+frames.
+
+**Concurrency:** the bundled C decoder keeps static state and is not
+reentrant, so all decodes in the process run through one queue — concurrent
+`decode()` calls are safe but execute one at a time.
+
+### Testing your own code
+
+`TinyWavpackDecoder`'s constructor accepts a custom `NativeDecodeRunner`, so
+you can fake the native layer in widget/unit tests without any native
+library:
+
+```dart
+class FakeRunner implements NativeDecodeRunner {
+  @override
+  Future<NativeDecodeResult> run(NativeDecodeRequest request,
+      void Function(double) onProgress) async {
+    onProgress(1.0);
+    return const NativeDecodeResult(success: true, error: '');
+  }
+}
+
+final decoder = TinyWavpackDecoder(runner: FakeRunner());
 ```
 
-The native build systems that are invoked by FFI (and method channel) plugins are:
+## Limitations
 
-* For Android: Gradle, which invokes the Android NDK for native builds.
-  * See the documentation in android/build.gradle.
-* For iOS and MacOS: Xcode, via CocoaPods.
-  * See the documentation in ios/flutter_tiny_wavpack_decoder.podspec.
-  * See the documentation in macos/flutter_tiny_wavpack_decoder.podspec.
-* For Linux and Windows: CMake.
-  * See the documentation in linux/CMakeLists.txt.
-  * See the documentation in windows/CMakeLists.txt.
+Inherited from the WavPack 4.40 tiny decoder (see
+`src/tiny-wavpack/lib/readme.txt`):
 
-## Binding to native code
+- Only the **first two channels** of multichannel files are decoded.
+- **No correction (`.wvc`) file support** — pure lossy/lossless `.wv` only.
+- WavPack stream versions **4.2 – 4.10** only (no pre-4.0 files).
+- Floating-point audio is returned **clipped to 24-bit** integer data.
+- Output WAV is limited to < 4 GiB (32-bit RIFF sizes).
 
-To use the native code, bindings in Dart are needed.
-To avoid writing these by hand, they are generated from the header file
-(`src/flutter_tiny_wavpack_decoder.h`) by `package:ffigen`.
-Regenerate the bindings by running `dart run ffigen --config ffigen.yaml`.
+## Development
 
-## Invoking native code
+```sh
+# Run the pure-Dart unit tests (no native build needed):
+flutter test test/unit
 
-Very short-running native functions can be directly invoked from any isolate.
-For example, see `sum` in `lib/flutter_tiny_wavpack_decoder.dart`.
+# Build the native library for the host, then run the full suite including
+# the real-C integration tests (golden byte-exact round-trip, error paths):
+tool/build_host_lib.sh
+flutter test
 
-Longer-running functions should be invoked on a helper isolate to avoid
-dropping frames in Flutter applications.
-For example, see `sumAsync` in `lib/flutter_tiny_wavpack_decoder.dart`.
+# Run the example on desktop:
+cd example && flutter run -d macos   # or -d linux / -d windows
+```
 
-## Flutter help
+The C sources under `src/tiny-wavpack/` are vendored **byte-identical** from
+the original project and are never modified; see
+`src/tiny-wavpack/UPSTREAM.md`.
 
-For help getting started with Flutter, view our
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Credits
 
+- [WavPack](https://www.wavpack.com) and its tiny decoder are by David
+  Bryant (Copyright © 1998–2006 Conifer Software, BSD license — see
+  [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)).
+- Original React Native plugin:
+  [react-native-tiny-wavpack-decoder](https://github.com/JairajJangle/react-native-tiny-wavpack-decoder).
+
+## License
+
+[MIT](LICENSE) © Jairaj Jangle. Bundled WavPack tiny decoder is BSD-licensed
+(see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)).
+
+## 🙏 Support the project
+
+[![LiberaPay](https://img.shields.io/badge/LiberaPay-FutureJJ-yellow?logo=liberapay)](https://liberapay.com/FutureJJ/donate)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-futurejj-ff5f5f?logo=ko-fi)](https://ko-fi.com/futurejj)
+[![PayPal](https://img.shields.io/badge/PayPal-jairajjangle001-00457C?logo=paypal)](https://www.paypal.com/paypalme/jairajjangle001/usd)
+[![UPI](https://img.shields.io/badge/UPI-QR%20code-orange)](https://github.com/JairajJangle/OpenCV-Catalogue/blob/master/.github/Jairaj_Jangle_Google_Pay_UPI_QR_Code.jpg)

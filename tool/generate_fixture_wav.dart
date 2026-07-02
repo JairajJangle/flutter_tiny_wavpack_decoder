@@ -17,7 +17,9 @@ const double rightHz = 880.0;
 
 void main(List<String> args) {
   if (args.length != 1) {
-    stderr.writeln('Usage: dart run tool/generate_fixture_wav.dart <output.wav>');
+    stderr.writeln(
+      'Usage: dart run tool/generate_fixture_wav.dart <output.wav>',
+    );
     exit(64);
   }
 

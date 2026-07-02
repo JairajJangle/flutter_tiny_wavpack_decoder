@@ -4,18 +4,19 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'flutter_tiny_wavpack_decoder'
-  s.version          = '0.0.1'
-  s.summary          = 'A new Flutter FFI plugin project.'
+  s.version          = '1.0.0'
+  s.summary          = 'Decode WavPack (.wv) audio to PCM .wav via the WavPack tiny decoder.'
   s.description      = <<-DESC
-A new Flutter FFI plugin project.
+Flutter FFI plugin bundling the BSD-licensed WavPack 4.40 "tiny decoder"
+C library to convert .wv files to PCM .wav files on-device.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/JairajJangle/flutter_tiny_wavpack_decoder'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Jairaj Jangle' => 'reachout.jairaj.jangle@gmail.com' }
 
   # This will ensure the source files in Classes/ are included in the native
   # builds of apps using this FFI plugin. Podspec does not support relative
-  # paths, so Classes contains a forwarder C file that relatively imports
+  # paths, so Classes contains forwarder C files that relatively import
   # `../src/*` so that the C sources can be shared among all target platforms.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
@@ -23,6 +24,12 @@ A new Flutter FFI plugin project.
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
+  # The vendored glue does `#include "wavpack.h"`, which lives in
+  # ../src/tiny-wavpack/lib — hence the extra header search path.
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
+    'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/../src" "$(PODS_TARGET_SRCROOT)/../src/tiny-wavpack/lib"'
+  }
   s.swift_version = '5.0'
 end

@@ -7,7 +7,9 @@ import 'dart:io';
 
 void main(List<String> args) {
   if (args.length != 2) {
-    stderr.writeln('Usage: dart run tool/corrupt_fixture.dart <in.wv> <out.wv>');
+    stderr.writeln(
+      'Usage: dart run tool/corrupt_fixture.dart <in.wv> <out.wv>',
+    );
     exit(64);
   }
 

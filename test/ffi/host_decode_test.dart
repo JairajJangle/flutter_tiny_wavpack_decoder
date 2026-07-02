@@ -34,19 +34,17 @@ void _expectBytesEqual(Uint8List actual, Uint8List expected) {
   expect(actual.length, expected.length, reason: 'length mismatch');
   for (var i = 0; i < actual.length; i++) {
     if (actual[i] != expected[i]) {
-      fail('byte mismatch at offset $i: '
-          'actual 0x${actual[i].toRadixString(16)} vs '
-          'expected 0x${expected[i].toRadixString(16)}');
+      fail(
+        'byte mismatch at offset $i: '
+        'actual 0x${actual[i].toRadixString(16)} vs '
+        'expected 0x${expected[i].toRadixString(16)}',
+      );
     }
   }
 }
 
-({
-  int channels,
-  int sampleRate,
-  int bitsPerSample,
-  int dataSize,
-}) _parseWavHeader(Uint8List bytes) {
+({int channels, int sampleRate, int bitsPerSample, int dataSize})
+_parseWavHeader(Uint8List bytes) {
   expect(bytes.length, greaterThanOrEqualTo(44));
   expect(String.fromCharCodes(bytes.sublist(0, 4)), 'RIFF');
   expect(String.fromCharCodes(bytes.sublist(8, 12)), 'WAVE');
@@ -104,8 +102,9 @@ void main() {
 
   late Directory tempDir;
   final decoder = TinyWavpackDecoder();
-  final referencePayload =
-      Uint8List.fromList(File(_reference).readAsBytesSync().sublist(44));
+  final referencePayload = Uint8List.fromList(
+    File(_reference).readAsBytesSync().sublist(44),
+  );
 
   setUpAll(() {
     ftwdLibraryOverridePath = libraryPath;
@@ -151,27 +150,28 @@ void main() {
       );
     });
 
-    test('24-bit output carries the 16-bit values unscaled in 3 bytes',
-        () async {
-      final outputPath = '${tempDir.path}/out.wav';
-      await decoder.decode(
-        inputPath: _fixture,
-        outputPath: outputPath,
-        bitsPerSample: 24,
-      );
+    test(
+      '24-bit output carries the 16-bit values unscaled in 3 bytes',
+      () async {
+        final outputPath = '${tempDir.path}/out.wav';
+        await decoder.decode(
+          inputPath: _fixture,
+          outputPath: outputPath,
+          bitsPerSample: 24,
+        );
 
-      final decoded = File(outputPath).readAsBytesSync();
-      final header = _parseWavHeader(decoded);
-      expect(header.bitsPerSample, 24);
-      expect(header.dataSize, _frames * _channels * 3);
-      _expectBytesEqual(
-        Uint8List.sublistView(decoded, 44),
-        _expected24BitPayload(referencePayload),
-      );
-    });
+        final decoded = File(outputPath).readAsBytesSync();
+        final header = _parseWavHeader(decoded);
+        expect(header.bitsPerSample, 24);
+        expect(header.dataSize, _frames * _channels * 3);
+        _expectBytesEqual(
+          Uint8List.sublistView(decoded, 44),
+          _expected24BitPayload(referencePayload),
+        );
+      },
+    );
 
-    test('32-bit output carries the 16-bit values unscaled as int32',
-        () async {
+    test('32-bit output carries the 16-bit values unscaled as int32', () async {
       final outputPath = '${tempDir.path}/out.wav';
       await decoder.decode(
         inputPath: _fixture,
@@ -198,8 +198,11 @@ void main() {
           outputPath: '${tempDir.path}/out.wav',
         ),
         throwsA(
-          isA<WavpackDecodeException>()
-              .having((e) => e.message, 'message', isNotEmpty),
+          isA<WavpackDecodeException>().having(
+            (e) => e.message,
+            'message',
+            isNotEmpty,
+          ),
         ),
       );
       expect(File('${tempDir.path}/out.wav').existsSync(), isFalse);
@@ -222,8 +225,11 @@ void main() {
           outputPath: '${tempDir.path}/out.wav',
         ),
         throwsA(
-          isA<WavpackDecodeException>()
-              .having((e) => e.message, 'message', contains('CRC')),
+          isA<WavpackDecodeException>().having(
+            (e) => e.message,
+            'message',
+            contains('CRC'),
+          ),
         ),
       );
     });
@@ -246,33 +252,38 @@ void main() {
   });
 
   group('progress', () {
-    test('reports granular, strictly increasing values ending at 1.0',
-        () async {
-      final seen = <double>[];
-      await decoder.decode(
-        inputPath: _fixture,
-        outputPath: '${tempDir.path}/out.wav',
-        onProgress: seen.add,
-      );
+    test(
+      'reports granular, strictly increasing values ending at 1.0',
+      () async {
+        final seen = <double>[];
+        await decoder.decode(
+          inputPath: _fixture,
+          outputPath: '${tempDir.path}/out.wav',
+          onProgress: seen.add,
+        );
 
-      // 88200 frames at one callback per 4096-frame block = 22 native
-      // callbacks; a few may race decode completion and be suppressed.
-      expect(seen.length, greaterThanOrEqualTo(10));
-      expect(seen.last, 1.0);
-      for (final value in seen) {
-        expect(value, greaterThan(0.0));
-        expect(value, lessThanOrEqualTo(1.0));
-      }
-      for (var i = 1; i < seen.length; i++) {
-        expect(seen[i], greaterThan(seen[i - 1]),
-            reason: 'progress must be strictly increasing');
-      }
+        // 88200 frames at one callback per 4096-frame block = 22 native
+        // callbacks; a few may race decode completion and be suppressed.
+        expect(seen.length, greaterThanOrEqualTo(10));
+        expect(seen.last, 1.0);
+        for (final value in seen) {
+          expect(value, greaterThan(0.0));
+          expect(value, lessThanOrEqualTo(1.0));
+        }
+        for (var i = 1; i < seen.length; i++) {
+          expect(
+            seen[i],
+            greaterThan(seen[i - 1]),
+            reason: 'progress must be strictly increasing',
+          );
+        }
 
-      // No callbacks may arrive after the future completes.
-      final countAtCompletion = seen.length;
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(seen.length, countAtCompletion);
-    });
+        // No callbacks may arrive after the future completes.
+        final countAtCompletion = seen.length;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(seen.length, countAtCompletion);
+      },
+    );
   });
 
   group('concurrency', () {

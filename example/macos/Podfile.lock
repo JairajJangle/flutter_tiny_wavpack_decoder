@@ -1,0 +1,22 @@
+PODS:
+  - flutter_tiny_wavpack_decoder (1.0.0):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+
+DEPENDENCIES:
+  - flutter_tiny_wavpack_decoder (from `Flutter/ephemeral/.symlinks/plugins/flutter_tiny_wavpack_decoder/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+
+EXTERNAL SOURCES:
+  flutter_tiny_wavpack_decoder:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_tiny_wavpack_decoder/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+
+SPEC CHECKSUMS:
+  flutter_tiny_wavpack_decoder: 0e190fa79a03aee41ff0e688a4ff9d056acd253b
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+
+PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
+
+COCOAPODS: 1.16.2

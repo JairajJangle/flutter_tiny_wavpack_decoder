@@ -124,10 +124,16 @@ void main() {
       final missing = '${tempDir.path}/nope.wv';
 
       await expectLater(
-        decoder.decode(inputPath: missing, outputPath: '${tempDir.path}/out.wav'),
+        decoder.decode(
+          inputPath: missing,
+          outputPath: '${tempDir.path}/out.wav',
+        ),
         throwsA(
-          isA<WavpackDecodeException>()
-              .having((e) => e.message, 'message', contains(missing)),
+          isA<WavpackDecodeException>().having(
+            (e) => e.message,
+            'message',
+            contains(missing),
+          ),
         ),
       );
       expect(runner.calls, isEmpty);
@@ -169,43 +175,56 @@ void main() {
   });
 
   group('error mapping', () {
-    test('native failure surfaces its message as WavpackDecodeException',
-        () async {
-      final runner = FakeRunner(
-        result:
-            const NativeDecodeResult(success: false, error: 'Invalid WavPack file'),
-      );
-      final decoder = TinyWavpackDecoder(runner: runner);
+    test(
+      'native failure surfaces its message as WavpackDecodeException',
+      () async {
+        final runner = FakeRunner(
+          result: const NativeDecodeResult(
+            success: false,
+            error: 'Invalid WavPack file',
+          ),
+        );
+        final decoder = TinyWavpackDecoder(runner: runner);
 
-      await expectLater(
-        decoder.decode(
-          inputPath: existingInput,
-          outputPath: '${tempDir.path}/out.wav',
-        ),
-        throwsA(
-          isA<WavpackDecodeException>()
-              .having((e) => e.message, 'message', 'Invalid WavPack file'),
-        ),
-      );
-    });
+        await expectLater(
+          decoder.decode(
+            inputPath: existingInput,
+            outputPath: '${tempDir.path}/out.wav',
+          ),
+          throwsA(
+            isA<WavpackDecodeException>().having(
+              (e) => e.message,
+              'message',
+              'Invalid WavPack file',
+            ),
+          ),
+        );
+      },
+    );
 
-    test('native failure with empty message maps to "Unknown decode error"',
-        () async {
-      final runner =
-          FakeRunner(result: const NativeDecodeResult(success: false, error: ''));
-      final decoder = TinyWavpackDecoder(runner: runner);
+    test(
+      'native failure with empty message maps to "Unknown decode error"',
+      () async {
+        final runner = FakeRunner(
+          result: const NativeDecodeResult(success: false, error: ''),
+        );
+        final decoder = TinyWavpackDecoder(runner: runner);
 
-      await expectLater(
-        decoder.decode(
-          inputPath: existingInput,
-          outputPath: '${tempDir.path}/out.wav',
-        ),
-        throwsA(
-          isA<WavpackDecodeException>()
-              .having((e) => e.message, 'message', 'Unknown decode error'),
-        ),
-      );
-    });
+        await expectLater(
+          decoder.decode(
+            inputPath: existingInput,
+            outputPath: '${tempDir.path}/out.wav',
+          ),
+          throwsA(
+            isA<WavpackDecodeException>().having(
+              (e) => e.message,
+              'message',
+              'Unknown decode error',
+            ),
+          ),
+        );
+      },
+    );
 
     test('unexpected errors from the native layer propagate as-is', () async {
       final runner = FakeRunner(error: StateError('isolate died'));
@@ -222,35 +241,39 @@ void main() {
   });
 
   group('progress reporting', () {
-    test('clamps, drops non-increasing values and guarantees terminal 1.0',
-        () async {
-      final runner = FakeRunner(progressScript: [0.25, 0.2, 0.5, 1.2]);
-      final decoder = TinyWavpackDecoder(runner: runner);
-      final seen = <double>[];
+    test(
+      'clamps, drops non-increasing values and guarantees terminal 1.0',
+      () async {
+        final runner = FakeRunner(progressScript: [0.25, 0.2, 0.5, 1.2]);
+        final decoder = TinyWavpackDecoder(runner: runner);
+        final seen = <double>[];
 
-      await decoder.decode(
-        inputPath: existingInput,
-        outputPath: '${tempDir.path}/out.wav',
-        onProgress: seen.add,
-      );
+        await decoder.decode(
+          inputPath: existingInput,
+          outputPath: '${tempDir.path}/out.wav',
+          onProgress: seen.add,
+        );
 
-      expect(seen, [0.25, 0.5, 1.0]);
-    });
+        expect(seen, [0.25, 0.5, 1.0]);
+      },
+    );
 
-    test('success with no native progress still reports exactly [1.0]',
-        () async {
-      final runner = FakeRunner();
-      final decoder = TinyWavpackDecoder(runner: runner);
-      final seen = <double>[];
+    test(
+      'success with no native progress still reports exactly [1.0]',
+      () async {
+        final runner = FakeRunner();
+        final decoder = TinyWavpackDecoder(runner: runner);
+        final seen = <double>[];
 
-      await decoder.decode(
-        inputPath: existingInput,
-        outputPath: '${tempDir.path}/out.wav',
-        onProgress: seen.add,
-      );
+        await decoder.decode(
+          inputPath: existingInput,
+          outputPath: '${tempDir.path}/out.wav',
+          onProgress: seen.add,
+        );
 
-      expect(seen, [1.0]);
-    });
+        expect(seen, [1.0]);
+      },
+    );
 
     test('failure does not synthesize a terminal 1.0', () async {
       final runner = FakeRunner(
@@ -302,8 +325,11 @@ void main() {
         outputPath: '${tempDir.path}/out2.wav',
       );
       await Future<void>.delayed(Duration.zero);
-      expect(runner.calls, hasLength(1),
-          reason: 'second decode must wait for the first');
+      expect(
+        runner.calls,
+        hasLength(1),
+        reason: 'second decode must wait for the first',
+      );
 
       runner.gate = null;
       gate.complete();
@@ -317,16 +343,21 @@ void main() {
         'decoder state is process-wide)', () async {
       final gate = Completer<void>();
       final runner = FakeRunner(gate: gate.future);
-      final first = TinyWavpackDecoder(runner: runner)
-          .decode(inputPath: existingInput, outputPath: '${tempDir.path}/a.wav');
+      final first = TinyWavpackDecoder(
+        runner: runner,
+      ).decode(inputPath: existingInput, outputPath: '${tempDir.path}/a.wav');
       await Future<void>.delayed(Duration.zero);
 
       final otherRunner = FakeRunner();
-      final second = TinyWavpackDecoder(runner: otherRunner)
-          .decode(inputPath: existingInput, outputPath: '${tempDir.path}/b.wav');
+      final second = TinyWavpackDecoder(
+        runner: otherRunner,
+      ).decode(inputPath: existingInput, outputPath: '${tempDir.path}/b.wav');
       await Future<void>.delayed(Duration.zero);
-      expect(otherRunner.calls, isEmpty,
-          reason: 'the queue is shared process-wide, not per instance');
+      expect(
+        otherRunner.calls,
+        isEmpty,
+        reason: 'the queue is shared process-wide, not per instance',
+      );
 
       runner.gate = null;
       gate.complete();

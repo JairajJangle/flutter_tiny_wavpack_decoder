@@ -30,7 +30,7 @@ class TinyWavpackDecoder {
   /// [runner] replaces the FFI-backed native layer in tests; production code
   /// should use the default.
   TinyWavpackDecoder({@visibleForTesting NativeDecodeRunner? runner})
-      : _runner = runner ?? const FfiDecodeRunner();
+    : _runner = runner ?? const FfiDecodeRunner();
 
   final NativeDecodeRunner _runner;
 
