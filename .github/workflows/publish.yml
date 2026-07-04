@@ -10,8 +10,12 @@
 name: Publish to pub.dev
 
 on:
+  # Direct tag pushes (e.g. a human pushing v1.2.3) publish directly.
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+  # release.yml dispatches this on the new tag ref after semantic-release cuts
+  # a version, because tags created inside a workflow do not fire push above.
+  workflow_dispatch:
 
 jobs:
   publish:

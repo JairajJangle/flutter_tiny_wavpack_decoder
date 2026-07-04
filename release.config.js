@@ -32,6 +32,13 @@ module.exports = {
       {
         prepareCmd:
           "sed -i 's/^version: .*/version: ${nextRelease.version}/' pubspec.yaml",
+        // After the release commit and tag are pushed, explicitly dispatch the
+        // pub.dev publish workflow on the new tag ref. A tag created inside a
+        // GitHub Actions run does not fire other workflows' push triggers, so
+        // we trigger publish.yml deterministically instead of relying on the
+        // tag-push event. The tag ref makes pub.dev's OIDC check pass.
+        successCmd:
+          'gh workflow run publish.yml --ref "v${nextRelease.version}"',
       },
     ],
     '@semantic-release/github', // Creates the GitHub release and the v{version} tag.
