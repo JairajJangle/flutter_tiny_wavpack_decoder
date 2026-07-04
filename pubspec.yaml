@@ -1,6 +1,6 @@
 name: flutter_tiny_wavpack_decoder
 description: "Decode WavPack (.wv) audio to PCM .wav on-device via the tiny dependency-free WavPack decoder over Dart FFI. Android, iOS, macOS, Linux, Windows."
-version: 1.0.2
+version: 1.0.0
 repository: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder
 issue_tracker: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/issues
 topics:
@@ -42,3 +42,11 @@ flutter:
         ffiPlugin: true
       windows:
         ffiPlugin: true
+
+# Config for the `cider` CLI (dart pub global activate cider), used to bump the
+# version and roll the CHANGELOG at release time. See the Releasing section in
+# README.md. This key is ignored by pub/flutter tooling.
+cider:
+  link_template:
+    tag: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/releases/tag/%tag%
+    diff: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/compare/%from%...%to%

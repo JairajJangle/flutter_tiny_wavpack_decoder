@@ -144,6 +144,29 @@ cd example && flutter run -d macos   # or -d linux / -d windows
 The C sources under `src/tiny-wavpack/` are vendored byte-identical from the
 original project and are never modified; see `src/tiny-wavpack/UPSTREAM.md`.
 
+## Releasing
+
+Releases are cut by a maintainer with [cider](https://pub.dev/packages/cider)
+and published to pub.dev automatically by the `publish.yml` workflow when a
+version tag is pushed.
+
+```sh
+dart pub global activate cider   # one time
+
+cider bump patch                 # or: minor / major
+cider release                    # stamps the [Unreleased] CHANGELOG section
+
+VERSION=$(cider version)
+git commit -am "chore: release v$VERSION"
+git tag "v$VERSION"
+git push --follow-tags           # the tag push triggers pub.dev publishing
+```
+
+Automated publishing must be enabled once on pub.dev (package Admin > Automated
+publishing > GitHub Actions, tag pattern `v{{version}}`). The very first
+release is published manually with `dart pub publish`. The publish workflow
+skips any version already on pub.dev, so re-pushing a tag is safe.
+
 ## Credits
 
 - [WavPack](https://www.wavpack.com) and its tiny decoder are by David Bryant

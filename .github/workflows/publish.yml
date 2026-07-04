@@ -1,20 +1,20 @@
-# Publishes to pub.dev when a version tag (v1.2.3) is pushed. release.yml
-# (semantic-release) creates and pushes that tag from conventional commits on
-# main, so a normal merge to main drives the whole release.
+# Publishes to pub.dev when a version tag (v1.2.3) is pushed.
 #
-# INERT until you enable automated publishing for this package on pub.dev:
+# Release flow (see the Releasing section in README.md): a maintainer bumps the
+# version and rolls the CHANGELOG with cider, commits, then pushes the vX.Y.Z
+# tag. The tag push triggers this workflow, which publishes to pub.dev over
+# OIDC. Because the tag is pushed from a developer machine (not created inside
+# an Actions run), it triggers reliably.
+#
+# Requires automated publishing enabled on pub.dev:
 #   pub.dev > package > Admin > Automated publishing > GitHub Actions,
 #   repository JairajJangle/flutter_tiny_wavpack_decoder, tag pattern v{{version}}.
-# The first release must be published manually (`dart pub publish`); automated
-# publishing can only be enabled on an already-published package.
+# workflow_dispatch is kept as a manual fallback.
 name: Publish to pub.dev
 
 on:
-  # Direct tag pushes (e.g. a human pushing v1.2.3) publish directly.
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
-  # release.yml dispatches this on the new tag ref after semantic-release cuts
-  # a version, because tags created inside a workflow do not fire push above.
   workflow_dispatch:
 
 jobs:
@@ -25,9 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Skip when this version is already on pub.dev. Makes the workflow
-      # idempotent: re-running a tag, or the baseline v1.0.0 tag that matches
-      # the first manual publish, is a no-op instead of a hard failure.
+      # Skip when this version is already on pub.dev, so re-running a tag is a
+      # no-op instead of a hard failure.
       - name: Check if version already published
         id: check
         run: |

@@ -32,5 +32,3 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Node (semantic-release tooling)
-node_modules/
