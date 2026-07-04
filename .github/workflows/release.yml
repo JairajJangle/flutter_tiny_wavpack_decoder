@@ -76,4 +76,3 @@ jobs:
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }} # For the gh CLI dispatch in successCmd.

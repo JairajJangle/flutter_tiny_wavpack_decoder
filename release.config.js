@@ -32,13 +32,6 @@ module.exports = {
       {
         prepareCmd:
           "sed -i 's/^version: .*/version: ${nextRelease.version}/' pubspec.yaml",
-        // After the release commit and tag are pushed, explicitly dispatch the
-        // pub.dev publish workflow on the new tag ref. A tag created inside a
-        // GitHub Actions run does not fire other workflows' push triggers, so
-        // we trigger publish.yml deterministically instead of relying on the
-        // tag-push event. The tag ref makes pub.dev's OIDC check pass.
-        successCmd:
-          'gh workflow run publish.yml --ref "v${nextRelease.version}"',
       },
     ],
     '@semantic-release/github', // Creates the GitHub release and the v{version} tag.
@@ -46,8 +39,13 @@ module.exports = {
       '@semantic-release/git',
       {
         assets: ['pubspec.yaml', 'CHANGELOG.md'],
-        message:
-          'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
+        // No [skip ci] here on purpose. The release tag points at this commit,
+        // and GitHub honors [skip ci] on tag pushes too, which would stop
+        // publish.yml from ever firing. Without it, the tag (pushed by the
+        // PAT) cascades into publish.yml. The chore(release) commit landing on
+        // main re-runs release.yml, but semantic-release finds no releasable
+        // commits since the tag and exits as a no-op, so there is no loop.
+        message: 'chore(release): ${nextRelease.version}\n\n${nextRelease.notes}',
       },
     ],
   ],
