@@ -70,5 +70,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "chore(release): v${VERSION}"
-          git tag "v${VERSION}"
-          git push --follow-tags
+          git tag -a "v${VERSION}" -m "v${VERSION}"
+          # Push branch and tag explicitly: --follow-tags would silently skip
+          # lightweight tags, and we need both refs on the remote.
+          git push origin main "v${VERSION}"
