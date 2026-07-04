@@ -20,10 +20,31 @@ jobs:
       id-token: write # required for pub.dev OIDC token exchange
     steps:
       - uses: actions/checkout@v4
+
+      # Skip when this version is already on pub.dev. Makes the workflow
+      # idempotent: re-running a tag, or the baseline v1.0.0 tag that matches
+      # the first manual publish, is a no-op instead of a hard failure.
+      - name: Check if version already published
+        id: check
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/^version:[[:space:]]*//')
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            "https://pub.dev/api/packages/flutter_tiny_wavpack_decoder/versions/${VERSION}")
+          if [ "$CODE" = "200" ]; then
+            echo "Version ${VERSION} already published; skipping."
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: dart-lang/setup-dart@v1 # performs the pub.dev token exchange
+        if: steps.check.outputs.published == 'false'
       - uses: subosito/flutter-action@v2
+        if: steps.check.outputs.published == 'false'
         with:
           flutter-version: 3.35.7
           channel: stable
       - run: flutter pub get
+        if: steps.check.outputs.published == 'false'
       - run: dart pub publish --force
+        if: steps.check.outputs.published == 'false'
