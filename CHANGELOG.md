@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/compare/v1.0.1...v1.0.2) (2026-07-04)
+
+
+### Bug Fixes
+
+* trigger pub.dev publish via explicit dispatch on the release tag ([e3df5b1](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/commit/e3df5b15dc5031ff326db086b53f164def36706c))
+
 ## [1.0.1](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/compare/v1.0.0...v1.0.1) (2026-07-04)
 
 

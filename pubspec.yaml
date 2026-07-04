@@ -1,6 +1,6 @@
 name: flutter_tiny_wavpack_decoder
 description: "Decode WavPack (.wv) audio to PCM .wav on-device via the tiny dependency-free WavPack decoder over Dart FFI. Android, iOS, macOS, Linux, Windows."
-version: 1.0.1
+version: 1.0.2
 repository: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder
 issue_tracker: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/issues
 topics:
