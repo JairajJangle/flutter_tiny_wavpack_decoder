@@ -74,3 +74,17 @@ jobs:
           # Push branch and tag explicitly: --follow-tags would silently skip
           # lightweight tags, and we need both refs on the remote.
           git push origin main "v${VERSION}"
+
+      - name: Create GitHub release
+        if: env.RELEASE_TOKEN != '' && steps.rel.outputs.version != 'none' && steps.rel.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          VERSION="${{ steps.rel.outputs.version }}"
+          # Notes = this version's CHANGELOG section (between its heading and
+          # the next "## [" heading).
+          awk "/^## \\[${VERSION}\\]/{flag=1;next} /^## \\[/{flag=0} flag" \
+            CHANGELOG.md > /tmp/release_notes.md
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file /tmp/release_notes.md
