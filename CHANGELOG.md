@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-07-04
+
+### Bug Fixes
+
+- push release tag explicitly and unblock skipped workflows (4aa30fe)
+- publish via tag cascade instead of workflow dispatch (2f9c95a)
+
+
 ## [1.0.0] - 2026-07-04
 
 ### Added
