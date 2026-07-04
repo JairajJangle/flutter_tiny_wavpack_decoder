@@ -1,0 +1,5 @@
+# Files kept in the git repo but excluded from the published pub.dev package.
+release.config.js
+node_modules/
+package.json
+package-lock.json

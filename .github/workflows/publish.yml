@@ -1,9 +1,12 @@
-# Publishes to pub.dev when a version tag (v1.2.3) is pushed.
+# Publishes to pub.dev when a version tag (v1.2.3) is pushed. release.yml
+# (semantic-release) creates and pushes that tag from conventional commits on
+# main, so a normal merge to main drives the whole release.
 #
 # INERT until you enable automated publishing for this package on pub.dev:
 #   pub.dev > package > Admin > Automated publishing > GitHub Actions,
 #   repository JairajJangle/flutter_tiny_wavpack_decoder, tag pattern v{{version}}.
-# The first release must be published manually (`dart pub publish`).
+# The first release must be published manually (`dart pub publish`); automated
+# publishing can only be enabled on an already-published package.
 name: Publish to pub.dev
 
 on:
