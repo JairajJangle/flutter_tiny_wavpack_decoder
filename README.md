@@ -146,26 +146,29 @@ original project and are never modified; see `src/tiny-wavpack/UPSTREAM.md`.
 
 ## Releasing
 
-Releases are cut by a maintainer with [cider](https://pub.dev/packages/cider)
-and published to pub.dev automatically by the `publish.yml` workflow when a
-version tag is pushed.
+Releases are fully automated from GitHub Actions using
+[Conventional Commits](https://www.conventionalcommits.org). There is no manual
+step: just merge commits to `main`.
 
-```sh
-dart pub global activate cider   # one time
+- `.github/workflows/release.yml` runs `tool/release.dart` on every push to
+  `main`. It reads the commits since the last tag and decides the bump
+  (`feat` -> minor, `fix`/`perf` -> patch, `!`/`BREAKING CHANGE` -> major;
+  anything else releases nothing).
+- When a release is warranted it bumps `pubspec.yaml`, prepends a `CHANGELOG.md`
+  section, commits `chore(release): vX.Y.Z`, and pushes the `vX.Y.Z` tag.
+- The tag push triggers `.github/workflows/publish.yml`, which publishes to
+  pub.dev over OIDC. The publish job skips a version already on pub.dev, so it
+  is idempotent.
 
-cider bump patch                 # or: minor / major
-cider release                    # stamps the [Unreleased] CHANGELOG section
+One-time setup:
 
-VERSION=$(cider version)
-git commit -am "chore: release v$VERSION"
-git tag "v$VERSION"
-git push --follow-tags           # the tag push triggers pub.dev publishing
-```
-
-Automated publishing must be enabled once on pub.dev (package Admin > Automated
-publishing > GitHub Actions, tag pattern `v{{version}}`). The very first
-release is published manually with `dart pub publish`. The publish workflow
-skips any version already on pub.dev, so re-pushing a tag is safe.
+- Add a repository secret `RELEASE_TOKEN`, a Personal Access Token with
+  `contents: write`. It pushes the tag so the tag push can trigger publishing
+  (a tag pushed with the default `GITHUB_TOKEN` does not trigger other
+  workflows). Until the secret exists, `release.yml` stays green and idle.
+- Enable automated publishing on pub.dev (package Admin > Automated publishing >
+  GitHub Actions, tag pattern `v{{version}}`). The very first release is
+  published manually with `dart pub publish`.
 
 ## Credits
 

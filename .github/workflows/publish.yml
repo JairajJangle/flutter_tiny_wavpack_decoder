@@ -1,10 +1,9 @@
 # Publishes to pub.dev when a version tag (v1.2.3) is pushed.
 #
-# Release flow (see the Releasing section in README.md): a maintainer bumps the
-# version and rolls the CHANGELOG with cider, commits, then pushes the vX.Y.Z
-# tag. The tag push triggers this workflow, which publishes to pub.dev over
-# OIDC. Because the tag is pushed from a developer machine (not created inside
-# an Actions run), it triggers reliably.
+# Release flow (see the Releasing section in README.md): release.yml runs
+# tool/release.dart on push to main, and when a release is warranted it pushes
+# the vX.Y.Z tag with a PAT (RELEASE_TOKEN). That tag push triggers this
+# workflow, which publishes to pub.dev over OIDC.
 #
 # Requires automated publishing enabled on pub.dev:
 #   pub.dev > package > Admin > Automated publishing > GitHub Actions,

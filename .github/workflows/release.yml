@@ -1,0 +1,74 @@
+# Fully automated releases from GitHub Actions. On every push to main, decide
+# the semantic-version bump from the conventional commits since the last tag
+# (tool/release.dart), and if a release is warranted, bump pubspec.yaml, roll
+# CHANGELOG.md, commit, and push the vX.Y.Z tag.
+#
+# The tag is pushed with RELEASE_TOKEN (a PAT with contents:write), and the
+# release commit does NOT contain [skip ci], so the tag push cascades into
+# publish.yml, which publishes to pub.dev. A tag pushed by a PAT triggers other
+# workflows; the default GITHUB_TOKEN would not.
+#
+# The chore(release) commit landing back on main is ignored by the job guard
+# below, so there is no release loop.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    # Skip the release commit this workflow itself creates.
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release)') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history and tags for commit analysis.
+          persist-credentials: true
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+
+      # Everything below is skipped until RELEASE_TOKEN is set, so the workflow
+      # stays green before automated releases are enabled.
+      - name: Set up Flutter
+        if: env.RELEASE_TOKEN != ''
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          channel: stable
+
+      - name: Install dependencies
+        if: env.RELEASE_TOKEN != ''
+        run: flutter pub get
+
+      - name: Analyze
+        if: env.RELEASE_TOKEN != ''
+        run: flutter analyze --fatal-infos
+
+      - name: Unit tests
+        if: env.RELEASE_TOKEN != ''
+        run: flutter test test/unit
+
+      - name: Compute and apply release
+        if: env.RELEASE_TOKEN != ''
+        id: rel
+        run: |
+          OUTPUT=$(dart run tool/release.dart)
+          echo "$OUTPUT"
+          VERSION=$(echo "$OUTPUT" | sed -n 's/^RELEASE=//p')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit, tag and push
+        if: env.RELEASE_TOKEN != '' && steps.rel.outputs.version != 'none' && steps.rel.outputs.version != ''
+        run: |
+          VERSION="${{ steps.rel.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(release): v${VERSION}"
+          git tag "v${VERSION}"
+          git push --follow-tags
