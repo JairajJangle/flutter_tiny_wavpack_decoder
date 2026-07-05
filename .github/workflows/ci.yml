@@ -78,6 +78,25 @@ jobs:
       - run: flutter build ios --debug --no-codesign
         working-directory: example
 
+  example-web:
+    name: Example builds (Web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter build web --release
+        working-directory: example
+      # The WASM decoder and its worker script must land in the built bundle.
+      - name: Verify web decoder assets are bundled
+        run: |
+          test -f example/build/web/assets/packages/flutter_tiny_wavpack_decoder/web_assets/ftwd.wasm
+          test -f example/build/web/assets/packages/flutter_tiny_wavpack_decoder/web_assets/ftwd.js
+          test -f example/build/web/assets/packages/flutter_tiny_wavpack_decoder/web_assets/ftwd_worker.js
+
   publish-dry-run:
     name: pub.dev dry run
     runs-on: ubuntu-latest

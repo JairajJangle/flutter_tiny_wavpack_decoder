@@ -1,7 +1,12 @@
-# Fully automated releases from GitHub Actions. On every push to main, decide
-# the semantic-version bump from the conventional commits since the last tag
-# (tool/release.dart), and if a release is warranted, bump pubspec.yaml, roll
-# CHANGELOG.md, commit, and push the vX.Y.Z tag.
+# Fully automated releases from GitHub Actions. After the CI workflow
+# SUCCEEDS on a push to main, decide the semantic-version bump from the
+# conventional commits since the last tag (tool/release.dart), and if a
+# release is warranted, bump pubspec.yaml, roll CHANGELOG.md, commit, and
+# push the vX.Y.Z tag.
+#
+# Gated on CI via workflow_run: a red CI (format, analyze, any test or
+# example build) means no release. The job releases exactly the commit CI
+# validated (workflow_run.head_sha).
 #
 # The tag is pushed with RELEASE_TOKEN (a PAT with contents:write), and the
 # release commit does NOT contain [skip ci], so the tag push cascades into
@@ -13,13 +18,19 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
 
 jobs:
   release:
-    # Skip the release commit this workflow itself creates.
-    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release)') }}
+    # Only after a green CI on a direct push to main, and skip the release
+    # commit this workflow itself creates.
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          !startsWith(github.event.workflow_run.head_commit.message, 'chore(release)') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -29,6 +40,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Release exactly the commit CI validated, not whatever main points
+          # at by the time this job runs.
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0 # Full history and tags for commit analysis.
           persist-credentials: true
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
@@ -45,6 +59,10 @@ jobs:
       - name: Install dependencies
         if: env.RELEASE_TOKEN != ''
         run: flutter pub get
+
+      - name: Check formatting
+        if: env.RELEASE_TOKEN != ''
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
         if: env.RELEASE_TOKEN != ''
@@ -72,8 +90,10 @@ jobs:
           git commit -am "chore(release): v${VERSION}"
           git tag -a "v${VERSION}" -m "v${VERSION}"
           # Push branch and tag explicitly: --follow-tags would silently skip
-          # lightweight tags, and we need both refs on the remote.
-          git push origin main "v${VERSION}"
+          # lightweight tags, and we need both refs on the remote. HEAD:main
+          # because the checkout is detached at the CI-validated sha; if main
+          # moved since, this fails and the next green CI run releases instead.
+          git push origin HEAD:main "v${VERSION}"
 
       - name: Create GitHub release
         if: env.RELEASE_TOKEN != '' && steps.rel.outputs.version != 'none' && steps.rel.outputs.version != ''
