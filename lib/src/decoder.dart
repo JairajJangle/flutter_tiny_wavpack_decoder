@@ -12,7 +12,7 @@ import 'platform_defaults_stub.dart'
     as platform;
 
 /// Decodes WavPack (`.wv`) audio to PCM `.wav` using the bundled WavPack
-/// 4.40 "tiny decoder" C library — over `dart:ffi` on native platforms, and
+/// 4.40 "tiny decoder" C library: over `dart:ffi` on native platforms, and
 /// as WASM inside a Web Worker on the web.
 ///
 /// [decode] converts a file on disk to a file on disk (native platforms
@@ -63,7 +63,7 @@ class TinyWavpackDecoder {
   /// 44-byte header) at [outputPath], overwriting it if it exists.
   ///
   /// Not available on the web (browsers have no filesystem): throws an
-  /// [UnsupportedError] there — use [decodeBytes] instead.
+  /// [UnsupportedError] there; use [decodeBytes] instead.
   ///
   /// [maxSamples] caps the number of samples per channel to decode; the
   /// default `-1` decodes the entire file. Must be `>= -1`.

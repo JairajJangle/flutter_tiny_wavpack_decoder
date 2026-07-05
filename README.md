@@ -7,7 +7,7 @@
 
 A Flutter plugin that decodes WavPack (`.wv`) audio to PCM `.wav`
 on-device, powered by the tiny, dependency-free
-[WavPack](https://www.wavpack.com) 4.40 "tiny decoder" C library — called
+[WavPack](https://www.wavpack.com) 4.40 "tiny decoder" C library, called
 directly through `dart:ffi` on native platforms, and compiled to WASM
 running inside a Web Worker on the web.
 
@@ -36,7 +36,7 @@ and shares the exact same, unmodified C decoder.
 
 All APIs are available on every platform except path-based
 `decode()`, which needs a real filesystem and therefore throws
-`UnsupportedError` on the web — use `decodeBytes()` there.
+`UnsupportedError` on the web; use `decodeBytes()` there.
 
 ## Requirements
 
@@ -81,7 +81,7 @@ try {
 ### In-memory decoding (all platforms, required on web)
 
 `decodeBytes` takes the `.wv` bytes and returns the complete `.wav` file
-bytes — no filesystem involved. The input can come from anywhere: a picked
+bytes, with no filesystem involved. The input can come from anywhere: a picked
 file, a bundled asset, or a network download from your backend.
 
 ```dart
@@ -103,7 +103,7 @@ final Uint8List wavBytes = await decoder.decodeBytes(
 On the web, remember the usual browser rule: the server hosting the `.wv`
 must allow your app's origin via CORS.
 
-See the [`example/`](example/) app for a complete UI with a progress bar —
+See the [`example/`](example/) app for a complete UI with a progress bar,
 including playback and download of the decoded WAV on the web.
 
 ### Testing your own code

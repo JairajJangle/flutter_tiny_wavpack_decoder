@@ -1,5 +1,5 @@
 /// Decode WavPack (`.wv`) audio to PCM `.wav` on-device, using the bundled
-/// WavPack 4.40 "tiny decoder" C library — over `dart:ffi` on native
+/// WavPack 4.40 "tiny decoder" C library: over `dart:ffi` on native
 /// platforms, and as WASM inside a Web Worker on the web.
 library;
 

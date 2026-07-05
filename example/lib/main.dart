@@ -107,7 +107,7 @@ class _DecoderPageState extends State<DecoderPage> {
             Text(
               'Decode the bundled sample or pick your own .wv file '
               'to convert to a PCM WAV file'
-              '${kIsWeb ? ' — decoded in a WASM Web Worker' : ''}.',
+              '${kIsWeb ? ', decoded in a WASM Web Worker' : ''}.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),

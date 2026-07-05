@@ -24,7 +24,7 @@ C library to convert .wv files to PCM .wav files on-device.
 
   s.platform = :osx, '10.14'
   # The vendored glue does `#include "wavpack.h"`, which lives in
-  # ../src/tiny-wavpack/lib — hence the extra header search path.
+  # ../src/tiny-wavpack/lib, hence the extra header search path.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/../src" "$(PODS_TARGET_SRCROOT)/../src/tiny-wavpack/lib"'

@@ -5,8 +5,8 @@ A minimal Flutter app that decodes either a bundled WavPack sample
 live decode progress, the elapsed time, and the resulting size.
 
 On native platforms it uses the path-based `decode()` API and writes the
-`.wav` to a temporary directory. On the web it uses `decodeBytes()` — the
-decode runs as WASM in a Web Worker — and offers Play and Download buttons
+`.wav` to a temporary directory. On the web it uses `decodeBytes()` (the
+decode runs as WASM in a Web Worker) and offers Play and Download buttons
 for the in-memory result.
 
 ## Run

@@ -25,7 +25,7 @@ C library to convert .wv files to PCM .wav files on-device.
 
   # Flutter.framework does not contain a i386 slice.
   # The vendored glue does `#include "wavpack.h"`, which lives in
-  # ../src/tiny-wavpack/lib — hence the extra header search path.
+  # ../src/tiny-wavpack/lib, hence the extra header search path.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
