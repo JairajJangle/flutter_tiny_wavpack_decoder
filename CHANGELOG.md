@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-05
+
+### Features
+
+- add web (wasm) support and decodeBytes API (67805a4)
+
+
 ## [1.0.4] - 2026-07-04
 
 ### Bug Fixes
