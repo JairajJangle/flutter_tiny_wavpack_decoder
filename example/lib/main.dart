@@ -6,8 +6,7 @@ import 'package:flutter_tiny_wavpack_decoder/flutter_tiny_wavpack_decoder.dart';
 import 'decode_outcome.dart';
 // Native platforms decode file-to-file over FFI; the web decodes bytes in a
 // WASM Web Worker. Both files expose the same top-level flow functions.
-import 'flows_io.dart' if (dart.library.js_interop) 'flows_web.dart'
-    as flows;
+import 'flows_io.dart' if (dart.library.js_interop) 'flows_web.dart' as flows;
 
 void main() {
   runApp(const DecoderExampleApp());

@@ -64,8 +64,7 @@ String _createBlobUrl(Uint8List wavBytes) {
 
 /// Plays the decoded WAV through an HTMLAudioElement.
 void playWav(Uint8List wavBytes) {
-  final audio =
-      web.document.createElement('audio') as web.HTMLAudioElement;
+  final audio = web.document.createElement('audio') as web.HTMLAudioElement;
   audio.src = _createBlobUrl(wavBytes);
   audio.play();
 }

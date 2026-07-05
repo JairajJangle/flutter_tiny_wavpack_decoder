@@ -9,12 +9,14 @@ import 'native_decode_runner.dart';
 const bool pathDecodingSupported = false;
 
 /// No decoder implementation exists for this platform.
-NativeDecodeRunner defaultPathRunner() =>
-    throw UnsupportedError('flutter_tiny_wavpack_decoder: unsupported platform');
+NativeDecodeRunner defaultPathRunner() => throw UnsupportedError(
+  'flutter_tiny_wavpack_decoder: unsupported platform',
+);
 
 /// No decoder implementation exists for this platform.
-BytesDecodeRunner defaultBytesRunner() =>
-    throw UnsupportedError('flutter_tiny_wavpack_decoder: unsupported platform');
+BytesDecodeRunner defaultBytesRunner() => throw UnsupportedError(
+  'flutter_tiny_wavpack_decoder: unsupported platform',
+);
 
 /// Only reachable with an injected test runner.
 bool inputFileExists(String path) => true;
