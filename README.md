@@ -5,10 +5,11 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/blob/main/LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/JairajJangle)
 
-A Flutter plugin that decodes WavPack (`.wv`) audio files to PCM `.wav` files
+A Flutter plugin that decodes WavPack (`.wv`) audio to PCM `.wav`
 on-device, powered by the tiny, dependency-free
-[WavPack](https://www.wavpack.com) 4.40 "tiny decoder" C library called
-directly through `dart:ffi`.
+[WavPack](https://www.wavpack.com) 4.40 "tiny decoder" C library — called
+directly through `dart:ffi` on native platforms, and compiled to WASM
+running inside a Web Worker on the web.
 
 It is the Flutter counterpart of
 [react-native-tiny-wavpack-decoder](https://github.com/JairajJangle/react-native-tiny-wavpack-decoder)
@@ -17,18 +18,25 @@ and shares the exact same, unmodified C decoder.
 ## Features
 
 - Decode `.wv` to `.wav` (PCM, canonical 44-byte header) fully on-device.
+- File-to-file (`decode`) and in-memory bytes-to-bytes (`decodeBytes`) APIs.
+- Works on the web: the same C decoder compiled to WASM in a Web Worker.
 - Live decode progress callback reporting values from 0.0 to 1.0.
 - Output bit depth selection: 8, 16, 24, or 32 bits per sample.
 - Optional `maxSamples` cap for partial decodes.
-- Decoding runs in a worker isolate, so the UI thread never blocks.
-- Pure `dart:ffi`: no method channels and no platform bridge code.
+- Decoding runs in a worker isolate (native) or Web Worker (web), so the UI
+  thread never blocks.
+- No method channels and no platform bridge code.
 - Concurrent calls are safe; decodes are automatically serialized.
 
 ## Platform support
 
-| Android | iOS | macOS | Linux | Windows |
-|:-------:|:---:|:-----:|:-----:|:-------:|
-|   Yes   | Yes |  Yes  |  Yes  |   Yes   |
+| Android | iOS | macOS | Linux | Windows | Web |
+|:-------:|:---:|:-----:|:-----:|:-------:|:---:|
+|   Yes   | Yes |  Yes  |  Yes  |   Yes   | Yes |
+
+All APIs are available on every platform except path-based
+`decode()`, which needs a real filesystem and therefore throws
+`UnsupportedError` on the web — use `decodeBytes()` there.
 
 ## Requirements
 
@@ -40,6 +48,11 @@ and shares the exact same, unmodified C decoder.
 ```sh
 flutter pub add flutter_tiny_wavpack_decoder
 ```
+
+No platform-specific setup is required anywhere. On native platforms the C
+decoder is compiled by each platform's build tooling (CMake / CocoaPods); on
+the web the prebuilt WASM decoder and its worker script ship as package
+assets and are bundled automatically by `flutter build web`.
 
 ## Usage
 
@@ -65,13 +78,40 @@ try {
 }
 ```
 
-See the [`example/`](example/) app for a complete UI with a progress bar.
+### In-memory decoding (all platforms, required on web)
+
+`decodeBytes` takes the `.wv` bytes and returns the complete `.wav` file
+bytes — no filesystem involved. The input can come from anywhere: a picked
+file, a bundled asset, or a network download from your backend.
+
+```dart
+final decoder = TinyWavpackDecoder();
+
+// e.g. fetch a .wv from your backend (package:http shown; any client works):
+final response = await http.get(Uri.parse('https://example.com/audio.wv'));
+
+final Uint8List wavBytes = await decoder.decodeBytes(
+  response.bodyBytes,
+  // Optional, same as decode():
+  bitsPerSample: 16,
+  maxSamples: -1,
+  onProgress: (progress) => print('${(progress * 100).round()}%'),
+);
+// wavBytes is a complete WAV file: play it, upload it, or save it.
+```
+
+On the web, remember the usual browser rule: the server hosting the `.wv`
+must allow your app's origin via CORS.
+
+See the [`example/`](example/) app for a complete UI with a progress bar —
+including playback and download of the decoded WAV on the web.
 
 ### Testing your own code
 
-The `TinyWavpackDecoder` constructor accepts a custom `NativeDecodeRunner`, so
-you can fake the native layer in widget and unit tests without loading any
-native library:
+The `TinyWavpackDecoder` constructor accepts a custom `NativeDecodeRunner`
+(for `decode`) and `BytesDecodeRunner` (for `decodeBytes`), so you can fake
+the native layer in widget and unit tests without loading any native
+library:
 
 ```dart
 class FakeRunner implements NativeDecodeRunner {
@@ -101,6 +141,20 @@ final decoder = TinyWavpackDecoder(runner: FakeRunner());
 | `onProgress` | `void Function(double)?` | `null` | Progress callback on the caller's isolate. |
 
 Returns a `Future<void>` that completes once the WAV file is fully written.
+Not available on the web (throws `UnsupportedError`); use `decodeBytes`.
+
+### `TinyWavpackDecoder.decodeBytes(...)`
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `input` | `Uint8List` | required | The `.wv` bytes to decode. |
+| `maxSamples` | `int` | `-1` | Max samples per channel to decode; `-1` decodes the entire stream. |
+| `bitsPerSample` | `int` | `16` | Output bit depth: 8, 16, 24, or 32. |
+| `onProgress` | `void Function(double)?` | `null` | Progress callback on the caller's isolate. |
+
+Returns a `Future<Uint8List>` with the complete WAV file bytes (44-byte
+canonical header + PCM data). Available on every platform, including the
+web.
 
 Invalid `bitsPerSample` or `maxSamples` throw `ArgumentError` immediately.
 Runtime failures (missing input, invalid or corrupt WavPack data, CRC errors,
@@ -112,8 +166,8 @@ Progress values are strictly increasing within the range 0.0 to 1.0, a final
 future completes. Granularity is one callback per 4096 decoded frames.
 
 Because the bundled C decoder keeps static state and is not reentrant, all
-decodes in the process run through one queue. Concurrent `decode()` calls are
-safe but execute one at a time.
+decodes in the process run through one queue shared by `decode()` and
+`decodeBytes()`. Concurrent calls are safe but execute one at a time.
 
 ## Limitations
 
@@ -139,6 +193,14 @@ flutter test
 
 # Run the example on desktop:
 cd example && flutter run -d macos   # or -d linux / -d windows
+
+# Run the example on the web:
+cd example && flutter run -d chrome
+
+# Rebuild the WASM decoder after changing C sources used by the web build
+# (requires Emscripten's emcc on PATH; artifacts in web_assets/ are
+# committed so consumers never need the toolchain):
+tool/build_wasm.sh
 ```
 
 The C sources under `src/tiny-wavpack/` are vendored byte-identical from the

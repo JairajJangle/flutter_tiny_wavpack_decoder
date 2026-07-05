@@ -38,6 +38,34 @@ FFI_PLUGIN_EXPORT int ftwd_decode(
     void *context,
     char *error_out);
 
+/* Decodes a WavPack stream held in memory to a complete PCM WAV image
+ * (44-byte canonical header + data) allocated with malloc.
+ *
+ * input/input_len describe the .wv bytes. max_samples, force_bps,
+ * progress_callback, context and error_out behave exactly as in
+ * ftwd_decode.
+ *
+ * On success returns 1 and stores the malloc'd WAV image in *output_out
+ * and its length in *output_len_out; the caller must release it with
+ * ftwd_free_buffer. On failure returns 0, writes a message to error_out,
+ * and leaves *output_out and *output_len_out zeroed.
+ *
+ * NOT reentrant: shares the same static decoder state as ftwd_decode, so
+ * callers must serialize all decodes process-wide. */
+FFI_PLUGIN_EXPORT int ftwd_decode_buffer(
+    const unsigned char *input,
+    int input_len,
+    int max_samples,
+    int force_bps,
+    FtwdProgressCallback progress_callback,
+    void *context,
+    unsigned char **output_out,
+    int *output_len_out,
+    char *error_out);
+
+/* Frees a buffer returned via ftwd_decode_buffer's output_out. */
+FFI_PLUGIN_EXPORT void ftwd_free_buffer(unsigned char *buffer);
+
 #ifdef __cplusplus
 }
 #endif

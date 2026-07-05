@@ -7,6 +7,7 @@ project(flutter_tiny_wavpack_decoder_library VERSION 1.0.0 LANGUAGES C)
 
 add_library(flutter_tiny_wavpack_decoder SHARED
   "ftwd_shim.c"
+  "ftwd_buffer.c"
   "tiny-wavpack/common/TinyWavPackDecoderInterface.c"
   "tiny-wavpack/lib/bits.c"
   "tiny-wavpack/lib/float.c"

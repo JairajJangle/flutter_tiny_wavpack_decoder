@@ -1,5 +1,5 @@
 name: flutter_tiny_wavpack_decoder
-description: "Decode WavPack (.wv) audio to PCM .wav on-device via the tiny dependency-free WavPack decoder over Dart FFI. Android, iOS, macOS, Linux, Windows."
+description: "Decode WavPack (.wv) audio to PCM .wav on-device via the tiny dependency-free WavPack decoder over Dart FFI, or WASM on the web. All six Flutter platforms."
 version: 1.0.4
 repository: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder
 issue_tracker: https://github.com/JairajJangle/flutter_tiny_wavpack_decoder/issues
@@ -18,7 +18,10 @@ dependencies:
   ffi: ^2.1.3
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   meta: ^1.15.0
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -29,7 +32,9 @@ flutter:
   # This section identifies this Flutter project as an FFI plugin: the
   # native decoder in src/ is built and bundled by each platform's tooling
   # (CMake on Android/Linux/Windows, CocoaPods on iOS/macOS). There is no
-  # method-channel platform code.
+  # method-channel platform code. On the web the same C code runs as WASM
+  # inside a Web Worker (see web_assets/); the pluginClass there is an
+  # empty registrant that only declares web support.
   plugin:
     platforms:
       android:
@@ -42,6 +47,15 @@ flutter:
         ffiPlugin: true
       windows:
         ffiPlugin: true
+      web:
+        pluginClass: FlutterTinyWavpackDecoderWeb
+        fileName: src/ftwd_web_plugin.dart
+
+  # Prebuilt WASM decoder and its worker script, served to web apps as
+  # package assets. Rebuilt from src/ by tool/build_wasm.sh; committed so
+  # package consumers never need the Emscripten toolchain.
+  assets:
+    - web_assets/
 
 # Config for the `cider` CLI (dart pub global activate cider), used to bump the
 # version and roll the CHANGELOG at release time. See the Releasing section in

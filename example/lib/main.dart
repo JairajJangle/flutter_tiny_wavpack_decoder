@@ -1,9 +1,13 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tiny_wavpack_decoder/flutter_tiny_wavpack_decoder.dart';
+
+import 'decode_outcome.dart';
+// Native platforms decode file-to-file over FFI; the web decodes bytes in a
+// WASM Web Worker. Both files expose the same top-level flow functions.
+import 'flows_io.dart' if (dart.library.js_interop) 'flows_web.dart'
+    as flows;
 
 void main() {
   runApp(const DecoderExampleApp());
@@ -37,60 +41,50 @@ class _DecoderPageState extends State<DecoderPage> {
 
   bool _decoding = false;
   double _progress = 0;
-  String? _outputSummary;
+  DecodeOutcome? _outcome;
   String? _error;
   Duration? _elapsed;
 
   /// Decodes the bundled sample asset.
   Future<void> _decodeSample() async {
-    final tempDir = Directory.systemTemp.createTempSync('wavpack_example');
-    final inputPath = '${tempDir.path}/sample.wv';
     final asset = await rootBundle.load(_asset);
-    File(inputPath).writeAsBytesSync(asset.buffer.asUint8List());
-    await _runDecode(inputPath, '${tempDir.path}/sample.wav');
+    await _runDecode(
+      (onProgress) => flows.decodeSampleFlow(
+        _decoder,
+        asset.buffer.asUint8List(),
+        onProgress,
+      ),
+    );
   }
 
   /// Lets the user pick a `.wv` file and decodes it.
   Future<void> _pickAndDecode() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['wv'],
+    await _runDecode(
+      (onProgress) => flows.pickAndDecodeFlow(_decoder, onProgress),
     );
-    final inputPath = result?.files.single.path;
-    if (inputPath == null) {
-      return; // User cancelled the picker.
-    }
-    final tempDir = Directory.systemTemp.createTempSync('wavpack_example');
-    final baseName = inputPath.split(Platform.pathSeparator).last;
-    final stem = baseName.endsWith('.wv')
-        ? baseName.substring(0, baseName.length - 3)
-        : baseName;
-    await _runDecode(inputPath, '${tempDir.path}/$stem.wav');
   }
 
   /// Shared decode routine driving the progress bar and result summary.
-  Future<void> _runDecode(String inputPath, String outputPath) async {
+  Future<void> _runDecode(
+    Future<DecodeOutcome?> Function(void Function(double) onProgress) flow,
+  ) async {
     setState(() {
       _decoding = true;
       _progress = 0;
-      _outputSummary = null;
+      _outcome = null;
       _error = null;
       _elapsed = null;
     });
 
     final stopwatch = Stopwatch()..start();
     try {
-      await _decoder.decode(
-        inputPath: inputPath,
-        outputPath: outputPath,
-        onProgress: (progress) => setState(() => _progress = progress),
+      final outcome = await flow(
+        (progress) => setState(() => _progress = progress),
       );
-
       stopwatch.stop();
-      final size = File(outputPath).lengthSync();
       setState(() {
-        _outputSummary = '$outputPath\n$size bytes';
-        _elapsed = stopwatch.elapsed;
+        _outcome = outcome; // Null when the user cancelled the picker.
+        _elapsed = outcome == null ? null : stopwatch.elapsed;
       });
     } on WavpackDecodeException catch (e) {
       setState(() => _error = e.message);
@@ -102,6 +96,8 @@ class _DecoderPageState extends State<DecoderPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final outcome = _outcome;
+    final wavBytes = outcome?.wavBytes;
     return Scaffold(
       appBar: AppBar(title: const Text('Tiny WavPack Decoder')),
       body: Padding(
@@ -111,7 +107,8 @@ class _DecoderPageState extends State<DecoderPage> {
           children: [
             Text(
               'Decode the bundled sample or pick your own .wv file '
-              'to convert to a PCM WAV file.',
+              'to convert to a PCM WAV file'
+              '${kIsWeb ? ' — decoded in a WASM Web Worker' : ''}.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
@@ -136,13 +133,34 @@ class _DecoderPageState extends State<DecoderPage> {
                 'Decode failed: $_error',
                 style: TextStyle(color: theme.colorScheme.error),
               ),
-            if (_outputSummary != null) ...[
+            if (outcome != null) ...[
               Text(
                 'Decoded in ${_elapsed?.inMilliseconds} ms',
                 style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              Text(_outputSummary!, style: theme.textTheme.bodySmall),
+              Text(outcome.summary, style: theme.textTheme.bodySmall),
+              if (flows.supportsWavActions && wavBytes != null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: () => flows.playWav(wavBytes),
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Play'),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => flows.downloadWav(
+                        wavBytes,
+                        outcome.wavName ?? 'decoded.wav',
+                      ),
+                      icon: const Icon(Icons.download),
+                      label: const Text('Download'),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ],
         ),
