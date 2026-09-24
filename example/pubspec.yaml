@@ -98,3 +98,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  # Build iOS/macOS through Swift Package Manager, the plugin's supported
+  # Apple integration (the default from Flutter 3.44). CI flips this to false
+  # to keep the deprecated CocoaPods podspec covered.
+  config:
+    enable-swift-package-manager: true

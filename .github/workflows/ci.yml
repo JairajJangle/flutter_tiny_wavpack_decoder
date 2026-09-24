@@ -65,18 +65,56 @@ jobs:
       - run: flutter build apk --debug
         working-directory: example
 
-  example-ios:
-    name: Example builds (iOS)
+  example-apple:
+    name: Example builds (${{ matrix.platform }}, ${{ matrix.integration }}, Flutter ${{ matrix.flutter }})
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, macos]
+        integration: [swiftpm, cocoapods]
+        flutter: ['3.35.7']
+        include:
+          # Latest stable, where SwiftPM is on by default (Flutter 3.44+).
+          - platform: ios
+            integration: swiftpm
+            flutter: any
+          - platform: macos
+            integration: swiftpm
+            flutter: any
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: ${{ matrix.flutter }}
           channel: stable
           cache: true
-      - run: flutter build ios --debug --no-codesign
+      # The example opts into SwiftPM in its pubspec; flipping it off covers
+      # the deprecated podspec that apps still on CocoaPods build through.
+      - name: Use CocoaPods instead of SwiftPM
+        if: matrix.integration == 'cocoapods'
+        run: sed -i '' 's/enable-swift-package-manager: true/enable-swift-package-manager: false/' example/pubspec.yaml
+      - name: Build (iOS)
+        if: matrix.platform == 'ios'
+        run: flutter build ios --debug --no-codesign
         working-directory: example
+      - name: Build (macOS)
+        if: matrix.platform == 'macos'
+        run: flutter build macos --debug
+        working-directory: example
+      # SwiftPM ships the plugin as its own dynamic framework (named after
+      # the dashed product) so Dart's dlsym lookups survive release stripping;
+      # CocoaPods names it after the pod. Fail if either layout regresses.
+      - name: Verify plugin framework layout
+        run: |
+          if [ '${{ matrix.integration }}' = swiftpm ]; then fw=flutter-tiny-wavpack-decoder; else fw=flutter_tiny_wavpack_decoder; fi
+          if [ '${{ matrix.platform }}' = ios ]; then
+            bin="example/build/ios/iphoneos/Runner.app/Frameworks/$fw.framework/$fw"
+          else
+            app=(example/build/macos/Build/Products/Debug/*.app)
+            bin="${app[0]}/Contents/Frameworks/$fw.framework/$fw"
+          fi
+          nm -gU "$bin" | grep ftwd_decode
 
   example-web:
     name: Example builds (Web)

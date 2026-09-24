@@ -14,12 +14,16 @@ C library to convert .wv files to PCM .wav files on-device.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Jairaj Jangle' => 'reachout.jairaj.jangle@gmail.com' }
 
-  # This will ensure the source files in Classes/ are included in the native
-  # builds of apps using this FFI plugin. Podspec does not support relative
-  # paths, so Classes contains forwarder C files that relatively import
-  # `../src/*` so that the C sources can be shared among all target platforms.
+  # DEPRECATED: Swift Package Manager (flutter_tiny_wavpack_decoder/Package.swift)
+  # is the supported integration. This podspec is kept only so apps that have
+  # not migrated off CocoaPods keep building; it will be removed in a future
+  # major release. Both compile the same forwarder C files, which
+  # relatively import `../../../../src/*` so that the C sources can be shared
+  # among all target platforms. Only the .c files are listed: the headers in
+  # that directory exist for SwiftPM and must not become pod public headers.
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'flutter_tiny_wavpack_decoder/Sources/flutter_tiny_wavpack_decoder/*.c'
+  s.resource_bundles = {'flutter_tiny_wavpack_decoder_privacy' => ['flutter_tiny_wavpack_decoder/Sources/flutter_tiny_wavpack_decoder/PrivacyInfo.xcprivacy']}
   s.dependency 'FlutterMacOS'
 
   s.platform = :osx, '10.14'

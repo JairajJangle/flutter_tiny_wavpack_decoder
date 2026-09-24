@@ -3,6 +3,9 @@ import 'dart:io';
 
 const String _libName = 'flutter_tiny_wavpack_decoder';
 
+/// Library product name in ios/ and macos/flutter_tiny_wavpack_decoder/Package.swift.
+const String _spmFrameworkName = 'flutter-tiny-wavpack-decoder';
+
 /// Test hook: absolute path of a host-built copy of the native library.
 ///
 /// When set, [openFtwdLibrary] opens it instead of the platform-bundled
@@ -19,12 +22,17 @@ DynamicLibrary openFtwdLibrary() {
     return DynamicLibrary.open(override);
   }
   if (Platform.isIOS || Platform.isMacOS) {
-    try {
-      return DynamicLibrary.open('$_libName.framework/$_libName');
-    } on ArgumentError {
-      // The pod may be statically linked into the app binary.
-      return DynamicLibrary.process();
+    // Swift Package Manager names the framework after the library product,
+    // which uses dashes; CocoaPods names it after the pod.
+    for (final name in [_spmFrameworkName, _libName]) {
+      try {
+        return DynamicLibrary.open('$name.framework/$name');
+      } on ArgumentError {
+        // Try the next integration's layout.
+      }
     }
+    // The pod may be statically linked into the app binary.
+    return DynamicLibrary.process();
   }
   if (Platform.isAndroid || Platform.isLinux) {
     return DynamicLibrary.open('lib$_libName.so');

@@ -50,9 +50,25 @@ flutter pub add flutter_tiny_wavpack_decoder
 ```
 
 No platform-specific setup is required anywhere. On native platforms the C
-decoder is compiled by each platform's build tooling (CMake / CocoaPods); on
+decoder is compiled by each platform's build tooling (CMake on Android,
+Linux and Windows; Swift Package Manager or CocoaPods on iOS and macOS); on
 the web the prebuilt WASM decoder and its worker script ship as package
 assets and are bundled automatically by `flutter build web`.
+
+### iOS and macOS: Swift Package Manager
+
+The plugin ships a Swift package (`ios/` and `macos/flutter_tiny_wavpack_decoder/Package.swift`),
+which Flutter uses automatically whenever Swift Package Manager is enabled
+(the default from Flutter 3.44; opt in on older versions with
+`flutter config --enable-swift-package-manager`). Nothing changes in your
+Dart code, and no Xcode build settings need touching: the decoder ships as its
+own dynamic framework, so its symbols survive release builds' symbol
+stripping.
+
+CocoaPods is **deprecated** but still supported, so apps on older Flutter
+versions or with Swift Package Manager turned off keep building unchanged. It
+will be removed in a future major release, following Flutter's own move away
+from CocoaPods.
 
 ## Usage
 
@@ -193,6 +209,11 @@ flutter test
 
 # Run the example on desktop:
 cd example && flutter run -d macos   # or -d linux / -d windows
+
+# The example builds iOS/macOS through Swift Package Manager (see the
+# `config:` block in example/pubspec.yaml). To exercise the deprecated
+# CocoaPods path, set enable-swift-package-manager to false there; Flutter
+# recreates the Podfile on the next build.
 
 # Run the example on the web:
 cd example && flutter run -d chrome
