@@ -93,7 +93,9 @@ jobs:
       # the deprecated podspec that apps still on CocoaPods build through.
       - name: Use CocoaPods instead of SwiftPM
         if: matrix.integration == 'cocoapods'
-        run: sed -i '' 's/enable-swift-package-manager: true/enable-swift-package-manager: false/' example/pubspec.yaml
+        run: |
+          sed -i '' 's/enable-swift-package-manager: true/enable-swift-package-manager: false/' example/pubspec.yaml
+          grep -q 'enable-swift-package-manager: false' example/pubspec.yaml
       - name: Build (iOS)
         if: matrix.platform == 'ios'
         run: flutter build ios --debug --no-codesign
